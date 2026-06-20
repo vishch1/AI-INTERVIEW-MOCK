@@ -8,7 +8,11 @@ import { feedbackSchema } from "@/constants";
 
 export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
-
+  
+    console.log("========== CREATE FEEDBACK ==========");
+    console.log("Interview ID:", interviewId);
+    console.log("User ID:", userId);
+    console.log("Transcript:", transcript);
   try {
     const formattedTranscript = transcript
       .map(
@@ -17,8 +21,11 @@ export async function createFeedback(params: CreateFeedbackParams) {
       )
       .join("");
 
+      console.log("Formatted Transcript:");
+      console.log(formattedTranscript);
+
     const { object } = await generateObject({
-      model: google("gemini-2.0-flash-001", {
+      model: google("gemini-2.5-flash", {
         structuredOutputs: false,
       }),
       schema: feedbackSchema,
@@ -38,6 +45,9 @@ export async function createFeedback(params: CreateFeedbackParams) {
         "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
     });
 
+     console.log("Gemini Response:");
+     console.log(JSON.stringify(object, null, 2));
+
     const feedback = {
       interviewId: interviewId,
       userId: userId,
@@ -49,7 +59,11 @@ export async function createFeedback(params: CreateFeedbackParams) {
       createdAt: new Date().toISOString(),
     };
 
+    console.log("Feedback object:");
+    console.log(JSON.stringify(feedback, null, 2));
+
     let feedbackRef;
+
 
     if (feedbackId) {
       feedbackRef = db.collection("feedback").doc(feedbackId);
@@ -57,12 +71,25 @@ export async function createFeedback(params: CreateFeedbackParams) {
       feedbackRef = db.collection("feedback").doc();
     }
 
+    console.log("Saving feedback to Firestore...");
+    console.log("Doc ID:", feedbackRef.id);
+
     await feedbackRef.set(feedback);
+
+    console.log("Feedback saved successfully!");
 
     return { success: true, feedbackId: feedbackRef.id };
   } catch (error) {
-    console.error("Error saving feedback:", error);
-    return { success: false };
+  console.error("========== FEEDBACK ERROR ==========");
+  console.error(error);
+    if (error instanceof Error) {
+      console.error("Message:", error.message);
+      console.error("Stack:", error.stack);
+    }
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 

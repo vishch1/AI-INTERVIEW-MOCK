@@ -12,14 +12,16 @@ import {
 
 async function Home() {
   const user = await getCurrentUser();
+  const userId = user?.id;
+  const safeUserId = userId ?? "";
 
   const [userInterviews, allInterview] = await Promise.all([
-    getInterviewsByUserId(user?.id!),
-    getLatestInterviews({ userId: user?.id! }),
+    userId ? getInterviewsByUserId(userId) : Promise.resolve([]),
+    getLatestInterviews({ userId: safeUserId }),
   ]);
 
-  const hasPastInterviews = userInterviews?.length! > 0;
-  const hasUpcomingInterviews = allInterview?.length! > 0;
+  const hasPastInterviews = (userInterviews?.length ?? 0) > 0;
+  const hasUpcomingInterviews = (allInterview?.length ?? 0) > 0;
 
   return (
     <>
@@ -83,7 +85,7 @@ async function Home() {
               />
             ))
           ) : (
-            <p>There are no interviews available</p>
+            <p>There are no new interviews available. These interviews will add once your friends create new ones.</p>
           )}
         </div>
       </section>
